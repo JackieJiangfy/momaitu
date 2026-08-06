@@ -28,5 +28,30 @@ export default defineConfig({
         additionalData: `@use "@/assets/styles/variables.scss" as *;`
       }
     }
+  },
+  build: {
+    // 分包策略：将大依赖拆为独立 chunk，减小首屏体积
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          // Vue 运行时核心
+          if (/[\\/]node_modules[\\/](vue|@vue|vue-router|pinia)[\\/]/.test(id)) {
+            return 'vue-vendor'
+          }
+          // Arco Design 组件库（~400KB）
+          if (id.includes('@arco-design')) {
+            return 'arco-design'
+          }
+          // ECharts 图表库（~400KB，仅图谱页使用）
+          if (/[\\/]node_modules[\\/](echarts|zrender)[\\/]/.test(id)) {
+            return 'echarts'
+          }
+          return undefined
+        }
+      }
+    },
+    // 提升警告阈值，避免常规分包被误报
+    chunkSizeWarningLimit: 800
   }
 })

@@ -34,6 +34,13 @@ public interface RelationshipService {
     void delete(String novelId, String relationshipId);
 
     /**
+     * 批量删除关系（校验小说归属）
+     *
+     * @return 成功删除数量
+     */
+    Integer batchDelete(String novelId, java.util.List<String> relationshipIds);
+
+    /**
      * 校验关系属于指定小说（内部使用）
      */
     NovelRelationship checkRelationshipInNovel(String novelId, String relationshipId);

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -78,6 +79,20 @@ public class CharacterController {
                                @PathVariable String characterId) {
         characterService.delete(novelId, characterId);
         return Result.success();
+    }
+
+    /**
+     * 批量删除角色
+     * DELETE /novel/{novelId}/characters/batch
+     * Body: ["id1", "id2", ...]
+     */
+    @DeleteMapping("/batch")
+    public Result<Map<String, Object>> batchDelete(@PathVariable String novelId,
+                                                    @RequestBody List<String> characterIds) {
+        Integer count = characterService.batchDelete(novelId, characterIds);
+        Map<String, Object> data = new HashMap<>(1);
+        data.put("successCount", count);
+        return Result.success(data);
     }
 
     /**

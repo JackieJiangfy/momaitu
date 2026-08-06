@@ -102,7 +102,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
-import { listRelationships, deleteRelationship } from '@/api/relationship'
+import { listRelationships, deleteRelationship, batchDeleteRelationships } from '@/api/relationship'
 import { getNovel } from '@/api/novel'
 import type { RelationshipVO } from '@/types'
 import RelationshipEditModal from './RelationshipEditModal.vue'
@@ -193,8 +193,8 @@ async function handleDelete(record: RelationshipVO) {
 async function handleBatchDelete() {
   if (selectedKeys.value.length === 0) return
   try {
-    await Promise.all(selectedKeys.value.map((id) => deleteRelationship(novelId.value, id)))
-    Message.success(`已删除 ${selectedKeys.value.length} 条关系`)
+    const res = await batchDeleteRelationships(novelId.value, selectedKeys.value)
+    Message.success(`已删除 ${res.successCount} 条关系`)
     selectedKeys.value = []
     if (relationships.value.length === 0 && pagination.current > 1) {
       pagination.current--

@@ -40,6 +40,13 @@ public interface CharacterService {
     void delete(String novelId, String characterId);
 
     /**
+     * 批量删除角色（校验小说归属）
+     *
+     * @return 成功删除数量
+     */
+    Integer batchDelete(String novelId, java.util.List<String> characterIds);
+
+    /**
      * 批量导入角色（校验小说归属）
      *
      * @return 成功导入数量

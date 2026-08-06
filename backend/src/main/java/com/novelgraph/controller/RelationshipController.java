@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 关系控制器
@@ -64,5 +67,19 @@ public class RelationshipController {
                                @PathVariable String relationshipId) {
         relationshipService.delete(novelId, relationshipId);
         return Result.success();
+    }
+
+    /**
+     * 批量删除关系
+     * DELETE /novel/{novelId}/relationships/batch
+     * Body: ["id1", "id2", ...]
+     */
+    @DeleteMapping("/batch")
+    public Result<Map<String, Object>> batchDelete(@PathVariable String novelId,
+                                                     @RequestBody List<String> relationshipIds) {
+        Integer count = relationshipService.batchDelete(novelId, relationshipIds);
+        Map<String, Object> data = new HashMap<>(1);
+        data.put("successCount", count);
+        return Result.success(data);
     }
 }

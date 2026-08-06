@@ -28,6 +28,11 @@ export function deleteRelationship(novelId: string, id: string) {
   return request.delete<void>(`/novel/${novelId}/relationships/${id}`)
 }
 
+/** 批量删除关系 */
+export function batchDeleteRelationships(novelId: string, ids: string[]) {
+  return request.delete<{ successCount: number }>(`/novel/${novelId}/relationships/batch`, undefined, ids)
+}
+
 /** 查询小说的关系类型列表 */
 export function listRelTypes(novelId: string) {
   return request.get<RelTypeConfigVO[]>(`/novel/${novelId}/rel-types`)

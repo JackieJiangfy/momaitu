@@ -32,6 +32,11 @@ export function deleteCharacter(novelId: string, id: string) {
   return request.delete<void>(`/novel/${novelId}/characters/${id}`)
 }
 
+/** 批量删除角色 */
+export function batchDeleteCharacters(novelId: string, ids: string[]) {
+  return request.delete<{ successCount: number }>(`/novel/${novelId}/characters/batch`, undefined, ids)
+}
+
 /** 批量导入角色 */
 export function batchCreateCharacters(novelId: string, data: BatchCharacterDTO) {
   return request.post<CharacterVO[]>(`/novel/${novelId}/characters/batch`, data)

@@ -110,6 +110,19 @@ public class CharacterServiceImpl implements CharacterService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public Integer batchDelete(String novelId, List<String> characterIds) {
+        if (characterIds == null || characterIds.isEmpty()) {
+            return 0;
+        }
+        novelService.checkOwnership(novelId);
+        // 一次性删除（MyBatis-Plus 逻辑删除会自动更新 deleted 字段）
+        int count = characterMapper.deleteBatchIds(characterIds);
+        log.info("批量删除角色成功: novelId={}, count={}", novelId, count);
+        return count;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public Integer batchImport(String novelId, BatchCharacterDTO dto) {
         novelService.checkOwnership(novelId);
 

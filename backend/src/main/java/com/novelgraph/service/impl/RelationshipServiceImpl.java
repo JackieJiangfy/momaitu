@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -168,6 +169,18 @@ public class RelationshipServiceImpl implements RelationshipService {
         NovelRelationship rel = checkRelationshipInNovel(novelId, relationshipId);
         relationshipMapper.deleteById(rel.getId());
         log.info("关系删除成功: id={}", relationshipId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer batchDelete(String novelId, List<String> relationshipIds) {
+        if (relationshipIds == null || relationshipIds.isEmpty()) {
+            return 0;
+        }
+        novelService.checkOwnership(novelId);
+        int count = relationshipMapper.deleteBatchIds(relationshipIds);
+        log.info("批量删除关系成功: novelId={}, count={}", novelId, count);
+        return count;
     }
 
     @Override

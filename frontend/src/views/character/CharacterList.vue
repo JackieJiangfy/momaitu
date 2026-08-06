@@ -120,7 +120,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
-import { listCharacters, deleteCharacter, batchCreateCharacters } from '@/api/character'
+import { listCharacters, deleteCharacter, batchDeleteCharacters, batchCreateCharacters } from '@/api/character'
 import { getNovel } from '@/api/novel'
 import type { CharacterVO } from '@/types'
 import CharacterEditModal from './CharacterEditModal.vue'
@@ -222,10 +222,10 @@ async function handleDelete(record: CharacterVO) {
 async function handleBatchDelete() {
   if (selectedKeys.value.length === 0) return
   try {
-    await Promise.all(selectedKeys.value.map((id) => deleteCharacter(novelId.value, id)))
-    Message.success(`已删除 ${selectedKeys.value.length} 个角色`)
+    const res = await batchDeleteCharacters(novelId.value, selectedKeys.value)
+    Message.success(`已删除 ${res.successCount} 个角色`)
     selectedKeys.value = []
-    if (characters.value.length === selectedKeys.value.length && pagination.current > 1) {
+    if (characters.value.length === 0 && pagination.current > 1) {
       pagination.current--
     }
     fetchData()

@@ -97,8 +97,8 @@ export const request = {
   put<T = unknown>(url: string, data?: object) {
     return service.put<T, T>(url, data)
   },
-  delete<T = unknown>(url: string, params?: object) {
-    return service.delete<T, T>(url, { params })
+  delete<T = unknown>(url: string, params?: object, data?: object) {
+    return service.delete<T, T>(url, { params, data })
   }
 }
 
