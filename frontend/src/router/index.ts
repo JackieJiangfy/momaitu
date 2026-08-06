@@ -24,6 +24,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '我的小说' }
       },
       {
+        path: 'novel/:novelId/characters',
+        name: 'CharacterList',
+        component: () => import('@/views/character/CharacterList.vue'),
+        meta: { title: '角色管理' }
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/profile/Profile.vue'),
