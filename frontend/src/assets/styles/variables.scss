@@ -1,0 +1,36 @@
+// ============================================
+// 墨脉图 - 全局 SCSS 变量
+// 风格：编辑器式简约专业风
+// 主色：墨蓝 #16599e（呼应"墨脉图"项目名）
+// ============================================
+
+// ---- 品牌色 ----
+$color-primary: #16599e;        // 墨蓝主色
+$color-primary-hover: #1a6bb8;  // 悬停
+$color-primary-active: #124a82; // 按下
+
+// ---- 中性色 ----
+$color-bg-page: #f5f7fa;        // 页面背景
+$color-bg-card: #ffffff;        // 卡片背景
+$color-border: #e5e6eb;         // 边框
+$color-text-primary: #1d2129;   // 主文字
+$color-text-secondary: #4e5969; // 次文字
+$color-text-disabled: #c9cdd4; // 禁用
+
+// ---- 关系色（与后端 category 对齐）----
+$color-rel-positive: #00b42a;   // 友好/盟约
+$color-rel-neutral: #86909c;   // 中立
+$color-rel-negative: #f53f3f;   // 敌对/仇恨
+
+// ---- 阴影 ----
+$shadow-card: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+$shadow-hover: 0 4px 16px rgba(22, 89, 158, 0.12);
+
+// ---- 圆角 ----
+$radius-sm: 4px;
+$radius-md: 6px;
+$radius-lg: 8px;
+
+// ---- 字体 ----
+$font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+$font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
