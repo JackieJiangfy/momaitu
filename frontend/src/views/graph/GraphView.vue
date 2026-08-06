@@ -11,6 +11,14 @@
         <h2 v-else>关系图谱</h2>
       </div>
       <div class="graph-view__actions">
+        <a-input-search
+          v-model="searchKeyword"
+          placeholder="搜索角色名定位"
+          allow-clear
+          style="width: 200px"
+          @search="handleSearch"
+          @clear="clearHighlight"
+        />
         <a-tooltip content="居中">
           <a-button @click="resetView"><template #icon><icon-fullscreen /></template></a-button>
         </a-tooltip>
@@ -50,7 +58,7 @@
       </template>
     </a-empty>
 
-    <!-- 详情侧边栏 -->
+    <!-- 节点详情侧边栏 -->
     <transition name="slide">
       <div v-if="selectedNode" class="graph-view__detail">
         <div class="graph-view__detail-header">
@@ -63,6 +71,43 @@
           <a-descriptions-item label="定位">{{ roleLabel(selectedNode.roleType) }}</a-descriptions-item>
           <a-descriptions-item label="种族">{{ selectedNode.species || '-' }}</a-descriptions-item>
           <a-descriptions-item label="关系数">{{ selectedNode.relationCount }}</a-descriptions-item>
+        </a-descriptions>
+        <div v-if="nodeRelations.length > 0" class="graph-view__rel-list">
+          <div class="graph-view__rel-title">关联关系</div>
+          <div
+            v-for="r in nodeRelations"
+            :key="r.id"
+            class="graph-view__rel-item"
+            @click="focusEdge(r)"
+          >
+            <span class="graph-view__rel-name">{{ getOtherName(r, selectedNode.id) }}</span>
+            <a-tag :color="categoryColor(r.category)" size="small">{{ r.relType }}</a-tag>
+            <span class="graph-view__rel-arrow">{{ r.directed ? '→' : '↔' }}</span>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 关系详情侧边栏 -->
+    <transition name="slide">
+      <div v-if="selectedEdge" class="graph-view__detail">
+        <div class="graph-view__detail-header">
+          <h3>关系详情</h3>
+          <a-button type="text" size="small" @click="selectedEdge = null">×</a-button>
+        </div>
+        <a-descriptions :column="1" size="small" bordered>
+          <a-descriptions-item label="源角色">{{ getNodeName(selectedEdge.source) }}</a-descriptions-item>
+          <a-descriptions-item label="目标角色">{{ getNodeName(selectedEdge.target) }}</a-descriptions-item>
+          <a-descriptions-item label="关系类型">
+            <a-tag size="small">{{ selectedEdge.relType }}</a-tag>
+          </a-descriptions-item>
+          <a-descriptions-item label="性质">
+            <a-tag :color="categoryColor(selectedEdge.category)" size="small">
+              {{ categoryLabel(selectedEdge.category) }}
+            </a-tag>
+          </a-descriptions-item>
+          <a-descriptions-item label="方向">{{ selectedEdge.directed ? '单向' : '双向' }}</a-descriptions-item>
+          <a-descriptions-item label="强度">{{ selectedEdge.intensity }}</a-descriptions-item>
         </a-descriptions>
       </div>
     </transition>
@@ -77,7 +122,7 @@ import { GraphChart } from 'echarts/charts'
 import { TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { getGraph } from '@/api/graph'
-import type { GraphDataVO, GraphNodeVO } from '@/types'
+import type { GraphDataVO, GraphNodeVO, GraphEdgeVO } from '@/types'
 
 echarts.use([GraphChart, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer])
 
@@ -89,6 +134,8 @@ let chart: echarts.ECharts | null = null
 const loading = ref(false)
 const data = ref<GraphDataVO | null>(null)
 const selectedNode = ref<GraphNodeVO | null>(null)
+const selectedEdge = ref<GraphEdgeVO | null>(null)
+const searchKeyword = ref('')
 
 const roleColorMap: Record<string, string> = {
   main: '#f53f3f',
@@ -197,11 +244,15 @@ function renderChart() {
     ]
   })
 
-  // 节点点击事件
+  // 节点/边点击事件
   chart.off('click')
   chart.on('click', (params: any) => {
     if (params.dataType === 'node') {
       selectedNode.value = params.data.rawData as GraphNodeVO
+      selectedEdge.value = null
+    } else if (params.dataType === 'edge') {
+      selectedEdge.value = params.data.rawData as GraphEdgeVO
+      selectedNode.value = null
     }
   })
 }
@@ -211,6 +262,83 @@ function resetView() {
   chart.setOption({
     series: [{ type: 'graph', zoom: 1, center: ['50%', '50%'] }]
   } as any)
+}
+
+// ---- 搜索高亮 ----
+function handleSearch() {
+  if (!chart || !data.value || !searchKeyword.value.trim()) {
+    clearHighlight()
+    return
+  }
+  const kw = searchKeyword.value.trim().toLowerCase()
+  // 找到匹配节点
+  const matchedIds = new Set<string>()
+  data.value.nodes.forEach((n) => {
+    if (n.name.toLowerCase().includes(kw) || (n.alias && n.alias.toLowerCase().includes(kw))) {
+      matchedIds.add(n.id)
+    }
+  })
+  if (matchedIds.size === 0) return
+
+  // 更新节点样式:匹配放大+加边框,其他变淡
+  const nodes = data.value.nodes.map((n) => ({
+    id: n.id,
+    name: n.name,
+    symbolSize: matchedIds.has(n.id) ? 50 : 25,
+    itemStyle: {
+      color: roleColorMap[n.roleType] || '#16599e',
+      borderColor: matchedIds.has(n.id) ? '#ff7d00' : '#fff',
+      borderWidth: matchedIds.has(n.id) ? 4 : 1,
+      opacity: matchedIds.has(n.id) ? 1 : 0.3
+    },
+    label: { show: matchedIds.has(n.id), position: 'bottom' as const },
+    rawData: n
+  }))
+  chart.setOption({ series: [{ type: 'graph', data: nodes }] } as any)
+
+  // 聚焦到第一个匹配节点
+  const firstMatch = data.value.nodes.find((n) => matchedIds.has(n.id))
+  if (firstMatch && chart) {
+    chart.dispatchAction({ type: 'focusNodeAdjacency', seriesIndex: 0, dataIndex: Array.from(matchedIds).indexOf(firstMatch.id) })
+  }
+}
+
+function clearHighlight() {
+  if (!chart || !data.value) return
+  renderChart()
+}
+
+// ---- 详情面板工具 ----
+const nodeRelations = computed<GraphEdgeVO[]>(() => {
+  if (!selectedNode.value || !data.value) return []
+  const id = selectedNode.value.id
+  return data.value.edges.filter((e) => e.source === id || e.target === id)
+})
+
+function getNodeName(id: string): string {
+  return data.value?.nodes.find((n) => n.id === id)?.name || id.slice(0, 6)
+}
+
+function getOtherName(edge: GraphEdgeVO, selfId: string): string {
+  const otherId = edge.source === selfId ? edge.target : edge.source
+  return getNodeName(otherId)
+}
+
+function focusEdge(edge: GraphEdgeVO) {
+  selectedEdge.value = edge
+  selectedNode.value = null
+}
+
+function categoryColor(c: string): string {
+  if (c === 'positive') return 'green'
+  if (c === 'negative') return 'red'
+  return 'gray'
+}
+
+function categoryLabel(c: string): string {
+  if (c === 'positive') return '友好'
+  if (c === 'negative') return '敌对'
+  return '中立'
 }
 
 function handleResize() {
@@ -352,6 +480,43 @@ watch(novelId, fetchData)
       font-size: 16px;
       font-weight: 600;
     }
+  }
+
+  &__rel-list {
+    margin-top: 16px;
+    border-top: 1px solid $color-border;
+    padding-top: 12px;
+  }
+
+  &__rel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-text-secondary;
+    margin-bottom: 8px;
+  }
+
+  &__rel-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover {
+      background: $color-bg-page;
+    }
+  }
+
+  &__rel-name {
+    flex: 1;
+    font-size: 13px;
+  }
+
+  &__rel-arrow {
+    color: $color-text-secondary;
+    font-size: 14px;
   }
 }
 

@@ -48,6 +48,7 @@
               <a-button type="text" size="small" @click="handleGraph(novel)">图谱</a-button>
               <a-button type="text" size="small" @click="handleManage(novel)">管理</a-button>
               <a-button type="text" size="small" @click="handleEdit(novel)">编辑</a-button>
+              <a-button type="text" size="small" :loading="exportingId === novel.id" @click="handleExport(novel)">导出</a-button>
               <a-popconfirm content="确认删除此小说？删除后不可恢复" @ok="handleDelete(novel)">
                 <a-button type="text" size="small" status="danger">删除</a-button>
               </a-popconfirm>
@@ -84,6 +85,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Message } from '@arco-design/web-vue'
 import { listNovels, deleteNovel } from '@/api/novel'
+import { getGraph } from '@/api/graph'
 import type { NovelVO } from '@/types'
 import NovelEditModal from './NovelEditModal.vue'
 
@@ -91,6 +93,7 @@ const router = useRouter()
 
 const novels = ref<NovelVO[]>([])
 const total = ref(0)
+const exportingId = ref<string | null>(null)
 const page = ref(1)
 const size = ref(12)
 const keyword = ref('')
@@ -138,6 +141,61 @@ async function handleDelete(novel: NovelVO) {
     page.value--
   }
   fetchData()
+}
+
+async function handleExport(novel: NovelVO) {
+  exportingId.value = novel.id
+  try {
+    const graph = await getGraph(novel.id)
+    const payload = {
+      novel: {
+        id: novel.id,
+        title: novel.title,
+        author: novel.author,
+        description: novel.description,
+        coverUrl: novel.coverUrl,
+        status: novel.status
+      },
+      characters: graph.nodes.map((n) => ({
+        id: n.id,
+        name: n.name,
+        alias: n.alias,
+        roleType: n.roleType,
+        faction: n.faction,
+        species: n.species,
+        avatarUrl: n.avatarUrl,
+        relationCount: n.relationCount
+      })),
+      relationships: graph.edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        relType: e.relType,
+        category: e.category,
+        intensity: e.intensity,
+        directed: e.directed
+      })),
+      exportedAt: new Date().toISOString(),
+      totals: {
+        characters: graph.nodes.length,
+        relationships: graph.edges.length
+      }
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${novel.title || 'novel'}-${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    Message.success(`已导出 ${payload.totals.characters} 个角色 / ${payload.totals.relationships} 条关系`)
+  } catch {
+    // 错误已处理
+  } finally {
+    exportingId.value = null
+  }
 }
 
 function handleManage(novel: NovelVO) {

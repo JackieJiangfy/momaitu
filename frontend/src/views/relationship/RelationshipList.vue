@@ -30,6 +30,16 @@
           <a-option value="neutral">中立</a-option>
           <a-option value="negative">敌对</a-option>
         </a-select>
+        <a-popconfirm
+          :content="`确认删除选中的 ${selectedKeys.length} 条关系？`"
+          :disabled="selectedKeys.length === 0"
+          @ok="handleBatchDelete"
+        >
+          <a-button status="danger" :disabled="selectedKeys.length === 0">
+            <template #icon><icon-delete /></template>
+            批量删除 ({{ selectedKeys.length }})
+          </a-button>
+        </a-popconfirm>
         <a-button type="primary" @click="handleCreate">
           <template #icon><icon-plus /></template>
           新增关系
@@ -44,6 +54,8 @@
       :loading="loading"
       :pagination="pagination"
       row-key="id"
+      :row-selection="{ type: 'checkbox', showCheckedAll: true, onlyCurrent: false }"
+      v-model:selectedKeys="selectedKeys"
       :scroll="{ y: 'calc(100vh - 280px)' }"
       @page-change="onPageChange"
       @page-size-change="onPageSizeChange"
@@ -112,6 +124,8 @@ const pagination = reactive({
   showPageSize: true
 })
 
+const selectedKeys = ref<string[]>([])
+
 const columns = [
   { title: '关系', slotName: 'source', width: 240 },
   { title: '类型', slotName: 'relType', width: 120 },
@@ -174,6 +188,21 @@ async function handleDelete(record: RelationshipVO) {
     pagination.current--
   }
   fetchData()
+}
+
+async function handleBatchDelete() {
+  if (selectedKeys.value.length === 0) return
+  try {
+    await Promise.all(selectedKeys.value.map((id) => deleteRelationship(novelId.value, id)))
+    Message.success(`已删除 ${selectedKeys.value.length} 条关系`)
+    selectedKeys.value = []
+    if (relationships.value.length === 0 && pagination.current > 1) {
+      pagination.current--
+    }
+    fetchData()
+  } catch {
+    // 错误已处理
+  }
 }
 
 // ---- 工具 ----

@@ -32,6 +32,16 @@
           <template #icon><icon-import /></template>
           批量导入
         </a-button>
+        <a-popconfirm
+          :content="`确认删除选中的 ${selectedKeys.length} 个角色？`"
+          :disabled="selectedKeys.length === 0"
+          @ok="handleBatchDelete"
+        >
+          <a-button status="danger" :disabled="selectedKeys.length === 0">
+            <template #icon><icon-delete /></template>
+            批量删除 ({{ selectedKeys.length }})
+          </a-button>
+        </a-popconfirm>
         <a-button type="primary" @click="handleCreate">
           <template #icon><icon-plus /></template>
           新增角色
@@ -46,6 +56,8 @@
       :loading="loading"
       :pagination="pagination"
       row-key="id"
+      :row-selection="{ type: 'checkbox', showCheckedAll, onlyCurrent }"
+      v-model:selectedKeys="selectedKeys"
       :scroll="{ y: 'calc(100vh - 280px)' }"
       @page-change="onPageChange"
       @page-size-change="onPageSizeChange"
@@ -137,6 +149,11 @@ const pagination = reactive({
   showPageSize: true
 })
 
+// 行选择
+const selectedKeys = ref<string[]>([])
+const showCheckedAll = true
+const onlyCurrent = false
+
 const columns = [
   { title: '姓名', slotName: 'name', width: 200 },
   { title: '势力', slotName: 'faction', width: 120 },
@@ -200,6 +217,21 @@ async function handleDelete(record: CharacterVO) {
     pagination.current--
   }
   fetchData()
+}
+
+async function handleBatchDelete() {
+  if (selectedKeys.value.length === 0) return
+  try {
+    await Promise.all(selectedKeys.value.map((id) => deleteCharacter(novelId.value, id)))
+    Message.success(`已删除 ${selectedKeys.value.length} 个角色`)
+    selectedKeys.value = []
+    if (characters.value.length === selectedKeys.value.length && pagination.current > 1) {
+      pagination.current--
+    }
+    fetchData()
+  } catch {
+    // 错误已处理
+  }
 }
 
 // ---- 批量导入 ----
