@@ -45,6 +45,7 @@
               {{ formatDate(novel.createdAt) }}
             </span>
             <div class="novel-card__ops">
+              <a-button type="text" size="small" @click="handleGraph(novel)">图谱</a-button>
               <a-button type="text" size="small" @click="handleManage(novel)">管理</a-button>
               <a-button type="text" size="small" @click="handleEdit(novel)">编辑</a-button>
               <a-popconfirm content="确认删除此小说？删除后不可恢复" @ok="handleDelete(novel)">
@@ -141,6 +142,10 @@ async function handleDelete(novel: NovelVO) {
 
 function handleManage(novel: NovelVO) {
   router.push(`/novel/${novel.id}/characters`)
+}
+
+function handleGraph(novel: NovelVO) {
+  router.push(`/novel/${novel.id}/graph`)
 }
 
 function formatDate(iso: string): string {

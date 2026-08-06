@@ -42,6 +42,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '关系类型配置' }
       },
       {
+        path: 'novel/:novelId/graph',
+        name: 'GraphView',
+        component: () => import('@/views/graph/GraphView.vue'),
+        meta: { title: '关系图谱' }
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/profile/Profile.vue'),
