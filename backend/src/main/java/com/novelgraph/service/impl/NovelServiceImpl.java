@@ -16,6 +16,7 @@ import com.novelgraph.mapper.NovelCharacterMapper;
 import com.novelgraph.mapper.NovelMapper;
 import com.novelgraph.mapper.NovelRelationshipMapper;
 import com.novelgraph.service.NovelService;
+import com.novelgraph.service.RelTypeConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class NovelServiceImpl implements NovelService {
     private final NovelMapper novelMapper;
     private final NovelCharacterMapper characterMapper;
     private final NovelRelationshipMapper relationshipMapper;
+    private final RelTypeConfigService relTypeConfigService;
 
     @Override
     public IPage<NovelVO> page(NovelQueryDTO query) {
@@ -72,6 +74,8 @@ public class NovelServiceImpl implements NovelService {
         novel.setUserId(userId);
         novel.setStatus("ACTIVE");
         novelMapper.insert(novel);
+        // 复制 25 种系统预置关系类型到该小说
+        relTypeConfigService.copyPresetTypesToNovel(novel.getId());
         log.info("小说创建成功: id={}, title={}, userId={}", novel.getId(), novel.getTitle(), userId);
         return toVO(novel);
     }
