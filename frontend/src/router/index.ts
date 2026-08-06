@@ -30,6 +30,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '角色管理' }
       },
       {
+        path: 'novel/:novelId/relationships',
+        name: 'RelationshipList',
+        component: () => import('@/views/relationship/RelationshipList.vue'),
+        meta: { title: '关系管理' }
+      },
+      {
+        path: 'novel/:novelId/rel-types',
+        name: 'RelTypeConfig',
+        component: () => import('@/views/relationship/RelTypeConfig.vue'),
+        meta: { title: '关系类型配置' }
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/profile/Profile.vue'),
