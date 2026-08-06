@@ -10,6 +10,7 @@ import com.novelgraph.common.ResultCode;
 import com.novelgraph.dto.RelationshipQueryDTO;
 import com.novelgraph.dto.RelationshipSaveDTO;
 import com.novelgraph.dto.RelationshipVO;
+import com.novelgraph.dto.moliu.MoliuRelationshipSyncDTO;
 import com.novelgraph.entity.NovelCharacter;
 import com.novelgraph.entity.NovelRelationship;
 import com.novelgraph.mapper.NovelCharacterMapper;
@@ -181,6 +182,85 @@ public class RelationshipServiceImpl implements RelationshipService {
         int count = relationshipMapper.deleteBatchIds(relationshipIds);
         log.info("批量删除关系成功: novelId={}, count={}", novelId, count);
         return count;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> batchSync(String novelId, List<MoliuRelationshipSyncDTO> list) {
+        novelService.checkOwnership(novelId);
+        Map<String, Object> result = new HashMap<>(4);
+        if (list == null || list.isEmpty()) {
+            result.put("success", 0);
+            result.put("skipped", 0);
+            result.put("updated", 0);
+            return result;
+        }
+
+        // 一次性加载该小说所有角色名→ID 映射，避免 N+1
+        List<NovelCharacter> chars = characterMapper.selectList(
+                new LambdaQueryWrapper<NovelCharacter>()
+                        .eq(NovelCharacter::getNovelId, novelId)
+                        .eq(NovelCharacter::getDeleted, 0));
+        Map<String, String> nameToId = new HashMap<>(chars.size() * 2);
+        for (NovelCharacter c : chars) {
+            nameToId.put(c.getName(), c.getId());
+        }
+
+        int success = 0, skipped = 0, updated = 0;
+        for (MoliuRelationshipSyncDTO dto : list) {
+            String sourceId = nameToId.get(dto.getSourceName());
+            String targetId = nameToId.get(dto.getTargetName());
+            if (sourceId == null || targetId == null) {
+                log.warn("批量同步关系跳过：角色名未找到 source={} target={}",
+                        dto.getSourceName(), dto.getTargetName());
+                skipped++;
+                continue;
+            }
+            if (sourceId.equals(targetId)) {
+                skipped++;
+                continue;
+            }
+
+            // upsert：按 (novelId, sourceId, targetId, relType) 查找
+            NovelRelationship existing = relationshipMapper.selectOne(
+                    new LambdaQueryWrapper<NovelRelationship>()
+                            .eq(NovelRelationship::getNovelId, novelId)
+                            .eq(NovelRelationship::getSourceId, sourceId)
+                            .eq(NovelRelationship::getTargetId, targetId)
+                            .eq(NovelRelationship::getRelType, dto.getRelType())
+                            .last("LIMIT 1"));
+
+            if (existing == null) {
+                NovelRelationship rel = new NovelRelationship();
+                rel.setNovelId(novelId);
+                rel.setSourceId(sourceId);
+                rel.setTargetId(targetId);
+                rel.setRelType(dto.getRelType());
+                rel.setCategory(dto.getCategory() != null ? dto.getCategory() : "neutral");
+                rel.setDirected(dto.getDirected() != null ? dto.getDirected() : 0);
+                rel.setIntensity(dto.getIntensity() != null ? dto.getIntensity() : 5);
+                rel.setDescription(dto.getDescription());
+                rel.setStartChapter(dto.getStartChapter());
+                relationshipMapper.insert(rel);
+                success++;
+            } else {
+                // 已存在，更新字段
+                if (dto.getCategory() != null) existing.setCategory(dto.getCategory());
+                if (dto.getDirected() != null) existing.setDirected(dto.getDirected());
+                if (dto.getIntensity() != null) existing.setIntensity(dto.getIntensity());
+                if (dto.getDescription() != null) existing.setDescription(dto.getDescription());
+                if (dto.getStartChapter() != null) existing.setStartChapter(dto.getStartChapter());
+                relationshipMapper.updateById(existing);
+                updated++;
+                success++;
+            }
+        }
+        log.info("批量同步关系完成: novelId={}, total={}, success={}, skipped={}, updated={}",
+                novelId, list.size(), success, skipped, updated);
+        result.put("success", success);
+        result.put("skipped", skipped);
+        result.put("updated", updated);
+        return result;
     }
 
     @Override

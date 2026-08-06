@@ -5,6 +5,7 @@ import com.novelgraph.common.Result;
 import com.novelgraph.dto.RelationshipQueryDTO;
 import com.novelgraph.dto.RelationshipSaveDTO;
 import com.novelgraph.dto.RelationshipVO;
+import com.novelgraph.dto.moliu.MoliuRelationshipSyncDTO;
 import com.novelgraph.service.RelationshipService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -81,5 +82,19 @@ public class RelationshipController {
         Map<String, Object> data = new HashMap<>(1);
         data.put("successCount", count);
         return Result.success(data);
+    }
+
+    /**
+     * 批量 upsert 关系（来自墨流 LLM 抽取）
+     * POST /novel/{novelId}/relationships/batch-sync
+     * Body: [{ "source_name": "...", "target_name": "...", "rel_type": "..." }, ...]
+     *
+     * - 按角色名查找 ID，找不到则跳过该关系
+     * - 按 (novelId, sourceId, targetId, relType) upsert
+     */
+    @PostMapping("/batch-sync")
+    public Result<Map<String, Object>> batchSync(@PathVariable String novelId,
+                                                  @RequestBody List<MoliuRelationshipSyncDTO> list) {
+        return Result.success(relationshipService.batchSync(novelId, list));
     }
 }

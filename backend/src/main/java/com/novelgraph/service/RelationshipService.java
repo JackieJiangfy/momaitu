@@ -4,7 +4,11 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.novelgraph.dto.RelationshipQueryDTO;
 import com.novelgraph.dto.RelationshipSaveDTO;
 import com.novelgraph.dto.RelationshipVO;
+import com.novelgraph.dto.moliu.MoliuRelationshipSyncDTO;
 import com.novelgraph.entity.NovelRelationship;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 关系服务接口
@@ -38,7 +42,16 @@ public interface RelationshipService {
      *
      * @return 成功删除数量
      */
-    Integer batchDelete(String novelId, java.util.List<String> relationshipIds);
+    Integer batchDelete(String novelId, List<String> relationshipIds);
+
+    /**
+     * 批量 upsert 关系（来自墨流 LLM 抽取）
+     * - 按角色名查找 ID，找不到则跳过
+     * - 按 (novelId, sourceId, targetId, relType) upsert
+     *
+     * @return {"success": n, "skipped": m, "updated": k}
+     */
+    Map<String, Object> batchSync(String novelId, List<MoliuRelationshipSyncDTO> list);
 
     /**
      * 校验关系属于指定小说（内部使用）
