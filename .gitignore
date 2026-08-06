@@ -62,6 +62,8 @@ temp/
 application-local.yml
 application-local.properties
 application-dev-local.yml
+# 开发环境配置含数据库密码等敏感信息，不提交
+backend/src/main/resources/application-dev.yml
 
 # ========== 测试 / 覆盖率 ==========
 coverage/
