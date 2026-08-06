@@ -12,6 +12,8 @@ import com.novelgraph.service.NovelService;
 import com.novelgraph.service.RelTypeConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +34,10 @@ import java.util.stream.Collectors;
 public class RelTypeConfigServiceImpl implements RelTypeConfigService {
 
     private final NovelRelTypeConfigMapper relTypeConfigMapper;
-    private final NovelService novelService;
+
+    @Autowired
+    @Lazy
+    private NovelService novelService;
 
     @Override
     public List<RelTypeConfigVO> listByNovel(String novelId) {
