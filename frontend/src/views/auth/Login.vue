@@ -136,7 +136,7 @@ async function handleLogin() {
   try {
     await userStore.login(loginForm)
     Message.success('登录成功')
-    const redirect = (route.query.redirect as string) || '/'
+    const redirect = (route.query.redirect as string) || '/novels'
     router.replace(redirect)
   } catch {
     // 错误已由 request.ts 拦截器处理

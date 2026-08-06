@@ -4,8 +4,7 @@ import { getToken } from '@/api/request'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'Home',
-    component: () => import('@/views/Home.vue')
+    redirect: '/novels'
   },
   {
     path: '/login',
@@ -78,9 +77,9 @@ router.beforeEach((to, _from, next) => {
   // 判断目标路由是否公开
   const isPublic = to.meta.public === true
   if (isPublic) {
-    // 已登录用户访问登录页 → 跳首页
+    // 已登录用户访问登录页 → 跳小说列表
     if (to.name === 'Login' && getToken()) {
-      next({ path: '/' })
+      next({ path: '/novels' })
       return
     }
     next()
